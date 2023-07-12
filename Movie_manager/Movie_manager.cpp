@@ -40,6 +40,10 @@ void login_menu();
 void admin_menu();
 void user_menu();
 
+//可能需要共用的功能
+int print_movies();//说明，该函数用于打印电影信息，需要两个文件movie_info.txt ， order_info.txt 编码格式均为ANSI。该函数返回值为电影的总数量，如果部分文件没找到则会返回 -1 同时打印出错消息。
+void wait();
+
 //admin部分功能
 void add_movie();
 void delete_movie();
@@ -50,9 +54,10 @@ void display_list();
 void back();
 
 //user部分功能
-void buy_ticket(user_info user);
+void order_ticket(user_info user);
 void refund_ticket();
-void check_movies();
+//void print_movies();
+
 
 void wait() 
 {
@@ -70,37 +75,7 @@ int main()
 void buy_ticket(user_info user)
 {
     //打印电影信息 需要的文件：movie_info.txt ， order_info.txt 编码格式ANSI
-    start:system("cls");
-    FILE* fp = fopen("movie_info.txt", "r");
-    if (fp == NULL) {
-        printf("电影信息加载失败！\n");
-        wait();
-        return;
-    }
-    int num_movies = 0;
-    while ((fscanf(fp, "%d %s %lld %d %d", &movies[num_movies].id, & movies[num_movies].name, &movies[num_movies].date, &movies[num_movies].price, &movies[num_movies].remain_ticket)) == 5) {
-        num_movies++;
-    }
-    fclose(fp);
-    FILE* order_info = fopen("order_info.txt", "r");
-    if (order_info == NULL) {
-        printf("预定信息加载失败！请联系管理员。\n");
-        wait();
-        return;
-    }
-    int order_num = 0;
-    while (fscanf(order_info, "%s %lld %d %d %d", orders[order_num].name, &orders[order_num].date, &orders[order_num].ordered_seat_x, &orders[order_num].ordered_seat_y, &orders[order_num].user_id) == 5)
-        order_num++;
-    fclose(order_info);
-    printf("ID\t片名\t时间\t票价\t剩余座位\n");
-
-    for (int i = 0; i < num_movies; i++) {
-        for (int n = 0; n < order_num; n++)
-        {
-            if (strcmp(orders[n].name, movies[i].name) == 0 && orders[n].date == movies[i].date) movies->remain_ticket--;
-        }
-            printf("%-7d %s %lld %d    剩余%d个\n",movies[i].id,movies[i].name, movies[i].date, movies[i].price, movies[i].remain_ticket);
-    }
+    start:int num_movies = print_movies();
     //打印电影信息结束
     //开始选票 注意这里i变量作为电影定位符号不可以轻易更改！
     printf("\n\n请输入需要预约电影票的ID（请注意同一电影不同时间的ID不同）：");
@@ -144,7 +119,7 @@ void buy_ticket(user_info user)
                     {   
                         for (int j = 0; j < 8; j++)
                         {
-                            for (int n = 0; n<order_num; n++)
+                            for (int n = 0; n<order_num; n++)//该循环用于检测是否存在信息重合的情况，可复用
                             {
                                 if (strcmp(orders[n].name, movies[i].name) == 0&& orders[n].date == movies[i].date && orders[n].ordered_seat_x - 1 == k && orders[n].ordered_seat_y - 1 == j) order[k][j] = 1;
                             }
@@ -222,4 +197,42 @@ void buy_ticket(user_info user)
         wait();
         goto start;
     
+}
+
+
+
+int print_movies()
+{
+    system("cls");
+    FILE* fp = fopen("movie_info.txt", "r");
+    if (fp == NULL) {
+        printf("电影信息加载失败！\n");
+        wait();
+        return-1;
+    }
+    int num_movies = 0;
+    while ((fscanf(fp, "%d %s %lld %d %d", &movies[num_movies].id, &movies[num_movies].name, &movies[num_movies].date, &movies[num_movies].price, &movies[num_movies].remain_ticket)) == 5) {
+        num_movies++;
+    }
+    fclose(fp);
+    FILE* order_info = fopen("order_info.txt", "r");
+    if (order_info == NULL) {
+        printf("预定信息加载失败！请联系管理员。\n");
+        wait();
+        return-1;
+    }
+    int order_num = 0;
+    while (fscanf(order_info, "%s %lld %d %d %d", orders[order_num].name, &orders[order_num].date, &orders[order_num].ordered_seat_x, &orders[order_num].ordered_seat_y, &orders[order_num].user_id) == 5)
+        order_num++;
+    fclose(order_info);
+    printf("ID\t片名\t时间\t票价\t剩余座位\n");
+
+    for (int i = 0; i < num_movies; i++) {
+        for (int n = 0; n < order_num; n++)
+        {
+            if (strcmp(orders[n].name, movies[i].name) == 0 && orders[n].date == movies[i].date) movies->remain_ticket--;
+        }
+        printf("%-7d %s %lld %d    剩余%d个\n", movies[i].id, movies[i].name, movies[i].date, movies[i].price, movies[i].remain_ticket);
+    }
+    return num_movies;
 }
