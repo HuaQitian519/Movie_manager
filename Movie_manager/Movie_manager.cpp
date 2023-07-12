@@ -8,7 +8,7 @@ struct movie_info {
     long long date;
     int price;
     int remain_ticket = 40;
-
+    int room_num;
 };
 struct admin_info {
     int admin_id;
@@ -25,6 +25,7 @@ struct order_info {
     int user_id;
     int ordered_seat_x = 0;
     int ordered_seat_y = 0;
+    int room_num;
 };
 movie_info movies[50];
 order_info orders[200];
@@ -50,7 +51,8 @@ void back();
 
 //user部分功能
 void buy_ticket(user_info user);
-
+void refund_ticket();
+void check_movies();
 
 void wait() 
 {
@@ -67,6 +69,7 @@ int main()
 }
 void buy_ticket(user_info user)
 {
+    //打印电影信息 需要的文件：movie_info.txt ， order_info.txt 编码格式ANSI
     start:system("cls");
     FILE* fp = fopen("movie_info.txt", "r");
     if (fp == NULL) {
@@ -79,10 +82,27 @@ void buy_ticket(user_info user)
         num_movies++;
     }
     fclose(fp);
-    printf("ID\t片名\t时间\t票价\t剩余座位\n");
-    for (int i = 0; i < num_movies; i++) {
-        printf("%-7d %s %lld %d    剩余%d个\n",movies[i].id,movies[i].name, movies[i].date, movies[i].price, movies[i].remain_ticket);
+    FILE* order_info = fopen("order_info.txt", "r");
+    if (order_info == NULL) {
+        printf("预定信息加载失败！请联系管理员。\n");
+        wait();
+        return;
     }
+    int order_num = 0;
+    while (fscanf(order_info, "%s %lld %d %d %d", orders[order_num].name, &orders[order_num].date, &orders[order_num].ordered_seat_x, &orders[order_num].ordered_seat_y, &orders[order_num].user_id) == 5)
+        order_num++;
+    fclose(order_info);
+    printf("ID\t片名\t时间\t票价\t剩余座位\n");
+
+    for (int i = 0; i < num_movies; i++) {
+        for (int n = 0; n < order_num; n++)
+        {
+            if (strcmp(orders[n].name, movies[i].name) == 0 && orders[n].date == movies[i].date) movies->remain_ticket--;
+        }
+            printf("%-7d %s %lld %d    剩余%d个\n",movies[i].id,movies[i].name, movies[i].date, movies[i].price, movies[i].remain_ticket);
+    }
+    //打印电影信息结束
+    //开始选票 注意这里i变量作为电影定位符号不可以轻易更改！
     printf("\n\n请输入需要预约电影票的ID（请注意同一电影不同时间的ID不同）：");
     int choose_id;
     scanf("%d", &choose_id);
@@ -144,7 +164,7 @@ void buy_ticket(user_info user)
                     
                     for (int k = 0; k < ticket_num; k++)
                     {
-                       choose: printf("请为第%d张票选择座位！（0为可选座位，*为不可选或您已定座位)", k + 1);
+                       choose: printf("\n请为第%d张票选择座位！（0为可选座位，*为不可选或您已定座位)", k + 1);
                         printf("\n输入选定座位的行数和列数（例如：第一排第一位，输入”1 1“并回车）：");
                         int x, y = 0;
                         scanf("%d %d", &x, &y);
@@ -155,11 +175,18 @@ void buy_ticket(user_info user)
                                 for (int n = 0; n < order_num; n++)
                                 {
                                     if (strcmp(orders[n].name, movies[i].name) == 0 && orders[n].date == movies[i].date && orders[n].ordered_seat_x - 1 == k && orders[n].ordered_seat_y - 1 == j)
-                                        if (k == x && j == y) 
+                                    {
+                                        if (k == x && j == y)
                                         {
-                                            printf("该座位已被预定，请重新选择！\n");
+                                            printf("\n该座位已被预定！请重新选择！\n");
                                             goto choose;
                                         }
+                                        if (x > 5 || y > 8)
+                                        {
+                                            printf("\n行数或列数超出范围！请重新输入！\n");
+                                            goto choose;
+                                        }
+                                    }
                                 }
                                 
                                     
