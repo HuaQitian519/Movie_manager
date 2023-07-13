@@ -71,7 +71,7 @@ void wait()
 }
 int main()
 {
-    sort_movie();
+    check_ticket();
     
     /*user_info user;
     user.user_id = 1;
@@ -235,6 +235,95 @@ void sort_movie() {
 }
 
 
+void modify_movie() {
+    FILE* p;
+    char movie_name[50];
+    FILE* fp = fopen("movie_info.txt", "r");
+    if (fp == NULL) {
+        printf("电影信息加载失败！\n");
+        wait();
+        return;
+    }
+    int num_movies = 0;
+    while ((fscanf(fp, "%d %s %lld %d %d", &movies[num_movies].id, &movies[num_movies].name, &movies[num_movies].date, &movies[num_movies].price, &movies[num_movies].remain_ticket)) == 5) {
+        movies[num_movies].rank = num_movies;
+        num_movies++;
+    }
+    fclose(fp);
+    int label = 0;
+    for (int i = 0; i < num_movies; i++) {
+        printf("输入修改电影的名称：");
+        scanf("%s", movie_name);
+        if (strcmp(movie_name,movies[i].name)==0) {
+            printf("输入新的电影名称、放映时间、影片价格：");
+            scanf("%s %d %d", movies[i].name, & movies[i].date, &movies[i].price);
+            label = 1;
+            break;
+        }
+    }
+    if (label != 1) {
+        printf("无该名称的电影！");
+    }
+}
+
+void check_ticket() {
+    FILE* order_info = fopen("order_info.txt", "r");
+    if (order_info == NULL) {
+        printf("预定信息加载失败！请联系管理员。\n");
+        wait();
+        return;
+    }
+    int order_num = 0;
+    while (fscanf(order_info, "%s %lld %d %d %d", orders[order_num].name, &orders[order_num].date, &orders[order_num].ordered_seat_x, &orders[order_num].ordered_seat_y, &orders[order_num].user_id) == 5)
+        order_num++;
+    fclose(order_info);
+    FILE* p;
+    int id;
+    int k = order_num;
+    if (order_num == 0) {
+        printf("用户无电影预定信息！");
+        wait();
+        return;
+    }
+    for (int m = 0; m < k; m++) {
+        printf("请输入要核销的用户id: ");
+        scanf("%d", &id);
+        for (int i = 0; i < order_num; i++) {
+            if (orders[i].user_id == id) {
+                for (int j = i; j < k; j++)
+                {
+                    printf("已找到%d用户的电影预定信息：\n电影名称：%s \n播放日期：%lld\n第%d排,第%d列",orders[j].user_id, &orders[j].name, orders[j].date, orders[j].ordered_seat_x, orders[j].ordered_seat_y);
+                    movies[j] = movies[j + 1];//将后一个记录前移
+                }
+                k--;
+            }
+            if ((p = fopen("order_info.txt", "w")) == NULL)
+            {
+                printf("文件不存在！\n");
+                return;
+            }
+            for (int j = 0; j < k; j++)
+            {
+                fprintf(p, "% s % lld % d % d % d", &orders[j].name, orders[j].date, orders[j].ordered_seat_x, orders[j].ordered_seat_y, orders[j].user_id);
+
+            }
+            fclose(p);
+        }
+
+       
+    }
+}
+
+void display_list() {
+    FILE* order_info = fopen("order_info.txt", "r");
+    if (order_info == NULL) {
+        printf("预定信息加载失败！请联系管理员。\n");
+        wait();
+        return;
+    }
+    print_movies();
+
+}
 
 
 
@@ -372,6 +461,7 @@ void buy_ticket(user_info user)
         goto start;
     
 }
+
 
 
 
