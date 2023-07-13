@@ -54,8 +54,8 @@ void display_list();
 void back();
 
 //user部分功能
-void order_ticket(user_info user);
-void refund_ticket();
+void buy_ticket(user_info user);
+void refund_ticket(user_info user);
 //void print_movies();
 
 
