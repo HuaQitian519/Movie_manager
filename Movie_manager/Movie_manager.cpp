@@ -2,6 +2,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#define NUMBER 50
+#define LEN sizeof(struct movie_info)
 struct movie_info {
     int id;
     char name[20];
@@ -9,6 +11,7 @@ struct movie_info {
     int price;
     int remain_ticket = 40;
     int room_num;
+    int rank;
 };
 struct admin_info {
     int admin_id;
@@ -68,10 +71,181 @@ void wait()
 }
 int main()
 {
-    user_info user;
+    sort_movie();
+    
+    /*user_info user;
     user.user_id = 1;
-    buy_ticket(user);
+    buy_ticket(user);*/
+ 
 }
+
+
+void add_movie() {
+    char c[2];
+    int i = 0;
+    int k = 0;
+    FILE* p;
+    p = fopen("movie_info.txt", "a+");
+    if (p == NULL) {
+        printf("影片文件不存在！\n");
+        return;
+    }
+
+    while (!feof(p)) {
+
+        if (fread(&movies[k], LEN, 1, p) == 1) {
+            ++k;
+        }
+    }
+    fclose(p);
+    if (k == 0) {
+        printf("无加入影片！\n");
+    }
+    for (int k = 0; k < NUMBER; k++) {
+        FILE* p;
+        p = fopen("movie_info.txt", "a");
+        printf("输入电影序号：");
+        scanf("%d", &movies[k].id);
+        printf("电影名:");
+        scanf("%s", &movies[k].name);
+        printf("放映时间:");
+        scanf("%lld", &movies[k].date);
+        printf("电影票价:");
+        scanf("%d", &movies[k].price);
+        fprintf(p, "%d %s %lld %d 40\n", movies[k].id, &movies[k].name, movies[k].date, movies[k].price);
+            printf("%s已被加入！\n", &movies[k].name);
+            k++;
+            wait();
+        printf("是否继续增加影片？（y/n)");
+        scanf("%s", &c);
+        if (strcmp(c, "N") == 0 || strcmp(c, "n") == 0) {
+            fclose(p);
+            return;
+        }
+        fclose(p);
+    }
+
+
+    printf("结束增加影片的操作！");
+}
+
+void delete_movie() {
+    int k = 0;
+    int number = 0;//
+    int i = 0;
+    int j;
+    char c[2];
+    FILE* p;
+   
+        FILE* fp = fopen("movie_info.txt", "r");
+        if (fp == NULL) {
+            printf("电影信息加载失败！\n");
+            wait();
+            return;
+        }
+        int num_movies = 0;
+        while ((fscanf(fp, "%d %s %lld %d %d", &movies[num_movies].id, &movies[num_movies].name, &movies[num_movies].date, &movies[num_movies].price, &movies[num_movies].remain_ticket)) == 5) {
+            num_movies++;
+        }
+        fclose(fp);
+        k = print_movies();
+    printf("输入删除的电影序号：");
+    scanf("%d", &number);
+    for (i = 0; i < k; i++)
+    {
+        if (number == movies[i].id)
+        {
+            printf("找到该电影，是否删除？（y/n)\n");
+            scanf("%s", &c);
+            if (strcmp(c, "Y") == 0 || strcmp(c, "y") == 0)
+            {
+                for (j = i; j < k; j++)
+                {
+                    movies[j] = movies[j + 1];//将后一个记录前移
+                }
+                k--;
+            }
+            else
+            {
+                printf("找到电影，不删除。\n");
+                return;
+            }
+            if ((p = fopen("movie_info.txt", "w")) == NULL)
+            {
+                printf("文件不存在！\n");
+                return;
+            }
+            for (j = 0; j < k; j++)
+            {
+                fprintf(p, "%d %s %lld %d 40\n", movies[j].id, &movies[j].name, movies[j].date, movies[j].price);
+               
+            }
+            fclose(p);
+            printf("删除成功\n");
+            break;
+        }
+        if (i == k)
+        {
+            printf("没有找到该电影\n");
+        }
+    }
+}
+
+void sort_movie() {
+    FILE* p;
+
+    FILE* fp = fopen("movie_info.txt", "r");
+    if (fp == NULL) {
+        printf("电影信息加载失败！\n");
+        wait();
+        return;
+    }
+    int num_movies = 0;
+    while ((fscanf(fp, "%d %s %lld %d %d", &movies[num_movies].id, &movies[num_movies].name, &movies[num_movies].date, &movies[num_movies].price, &movies[num_movies].remain_ticket)) == 5) {
+        movies[num_movies].rank = num_movies;
+        num_movies++;
+    }
+    fclose(fp);
+    movie_info temp;
+        int i, j;
+    for (i = 0; i < num_movies-1; i++) {
+        for (j = 0; j < num_movies -1- i;j++) {
+            if (movies[j].date >movies[j + 1].date) {
+                temp = movies[j];
+                movies[j]= movies[j + 1];
+                movies[j + 1] = temp;
+            }
+        }
+    }
+    int rank = 0;
+    for (i = 0; i < num_movies; i++) {
+        if (i > 0 && movies[i].date != movies[i - 1].date) {
+            rank++;
+        }
+        movies[i].rank = rank;
+    }
+    p=fopen("movie_info.txt", "w");
+    for (j = 0; j < num_movies; j++)
+    {
+        fprintf(p, "%d %s %lld %d 40\n", movies[j].id, &movies[j].name, movies[j].date, movies[j].price);
+
+    }
+    fclose(p);
+    print_movies();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 void buy_ticket(user_info user)
 {
     //打印电影信息 需要的文件：movie_info.txt ， order_info.txt 编码格式ANSI
