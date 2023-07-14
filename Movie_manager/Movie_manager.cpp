@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #define NUMBER 50
 #define MAX_ADMIN 50
+#define MAX_USER 200
 #define LEN sizeof(struct movie_info)
 struct movie_info 
 {
@@ -37,6 +38,9 @@ struct order_info
 };
 movie_info movies[50];
 order_info orders[200];
+
+
+//主界面功能
 void add_admin();
 void add_user();
 void login_admin();
@@ -65,8 +69,8 @@ void back() { welcome_menu(); }
 
 //user部分功能
 void buy_ticket(user_info user);
-//void refund_ticket(user_info user);
-//void search_movies();
+void refund_ticket(user_info user);
+void search_movie();
 
 
 void wait()
@@ -295,7 +299,7 @@ void add_admin()
 void login_user()
 {
     system("cls");
-    user_info a, b[MAX_ADMIN];
+    user_info a, b[MAX_USER];
     FILE* fp;
     int n;
 
@@ -346,12 +350,14 @@ void login_user()
                     wait();
                     user_menu(a);
                 }
+                else goto error;
             }
         }
         
             printf("未找到该用户，请重试！");
-            wait();
-            printf("------账号或密码错误！------\n");
+            goto menu;
+        error:printf("------账号或密码错误！------\n");
+        menu:wait();
             char temp;
             while ((temp = getchar()) != '\n');
             printf("-----1.重新输入密码-------\n");
@@ -428,12 +434,14 @@ void login_admin()
                 wait();
                 admin_menu();
             }
+            else goto error;
         }
     }
 
     printf("未找到该用户，请重试！");
-    wait();
-    printf("------账号或密码错误！------\n");
+    goto menu;
+error:printf("------账号或密码错误！------\n");
+menu:wait();
     char temp;
     while ((temp = getchar()) != '\n');
     printf("-----1.重新输入密码-------\n");
@@ -747,13 +755,13 @@ void user_menu(user_info user)
     {
         switch (n)
         {
-        case 1:return;
+        case 1:search_movie();
             break;
         case 2:print_movies();
             break;
         case 3:buy_ticket(user);
             break;
-        case 4:/*refund_movie()*/;
+        case 4:refund_ticket(user);
             break;
         case 5:welcome_menu();
             break;
@@ -773,52 +781,50 @@ void user_menu(user_info user)
 }
 
 void add_movie() {
-    char c[2];
-    int i = 0;
-    int k = 0;
-    FILE* p;
-    p = fopen("movie_info.txt", "a+");
-    if (p == NULL) {
-        printf("影片文件不存在！\n");
+    FILE* f = fopen("movie_info.txt", "r");
+    if (f == NULL) {
+        printf("电影信息加载失败！\n");
+        wait();
         return;
     }
-
-    while (!feof(p)) {
-
-        if (fread(&movies[k], LEN, 1, p) == 1) {
-            ++k;
+    int num_movies = 0;
+    while ((fscanf(f, "%d %s %lld %d %d", &movies[num_movies].id, &movies[num_movies].name, &movies[num_movies].date, &movies[num_movies].price, &movies[num_movies].remain_ticket)) == 5) {
+        num_movies++;
+    }
+    fclose(f);
+    int i = num_movies;
+        FILE* fp;
+        fp = fopen("movie_info.txt", "a");
+        input:printf("输入电影ID：");
+        scanf("%d", &movies[i].id);
+        for (int j = 0; j < num_movies; j++)
+        {
+            if (movies[i].id == movies[j].id)
+            {
+                printf("检测到电影库中存在相同ID的电影！ID具有唯一性，请重新输入电影ID！");
+                wait();
+                goto input;
+            }
         }
-    }
-    fclose(p);
-    if (k == 0) {
-        printf("无加入影片！\n");
-    }
-    for (int k = 0; k < NUMBER; k++) {
-        FILE* p;
-        p = fopen("movie_info.txt", "a");
-        printf("输入电影序号：");
-        scanf("%d", &movies[k].id);
         printf("电影名:");
-        scanf("%s", movies[k].name);
+        scanf("%s", movies[i].name);
         printf("放映时间:");
-        scanf("%lld", &movies[k].date);
+        scanf("%lld", &movies[i].date);
         printf("电影票价:");
-        scanf("%d", &movies[k].price);
-        fprintf(p, "%d %s %lld %d 40\n", movies[k].id, &movies[k].name, movies[k].date, movies[k].price);
-        printf("%s已被加入！\n", &movies[k].name);
-        k++;
-        wait();
-        printf("是否继续增加影片？（y/n)");
-        scanf("%s", &c);
-        if (strcmp(c, "N") == 0 || strcmp(c, "n") == 0) {
-            fclose(p);
-            return;
-        }
-        fclose(p);
+        scanf("%d", &movies[i].price);
+        fprintf(fp, "%d %s %lld %d 40\n", movies[i].id, &movies[i].name, movies[i].date, movies[i].price);
+        printf("%s已被加入！\n", &movies[i].name);
+        fclose(fp);        
+    wait();
+    printf("是否继续增加影片？（y/n)");
+    char c;
+    scanf("%s", &c);
+    if (c=='y'||c=='Y')
+    {
+        add_movie();
     }
-
-
     printf("结束增加影片的操作！");
+    system("cls");
 }
 
 void delete_movie() {
@@ -926,9 +932,10 @@ void sort_movie() {
     print_movies();
 }
 
-void modify_movie() {
+void modify_movie() 
+{
     FILE* p;
-    char movie_name[50];
+    int id;
     FILE* fp = fopen("movie_info.txt", "r");
     if (fp == NULL) {
         printf("电影信息加载失败！\n");
@@ -941,20 +948,43 @@ void modify_movie() {
         num_movies++;
     }
     fclose(fp);
+    int k = num_movies;
     int label = 0;
-    for (int i = 0; i < num_movies; i++) {
-        printf("输入修改电影的名称：");
-        scanf("%s", movie_name);
-        if (strcmp(movie_name, movies[i].name) == 0) {
+    print_movies();
+    printf("输入修改电影的ID：");
+    scanf("%d", &id);
+    for (int i = 0; i < k; i++)
+    {
+
+        if (id == movies[i].id) {
             printf("输入新的电影名称、放映时间、影片价格：");
             scanf("%s %d %d", movies[i].name, &movies[i].date, &movies[i].price);
             label = 1;
-            break;
         }
     }
     if (label != 1) {
         printf("无该名称的电影！");
+        return;
     }
+    if ((p = fopen("movie_info.txt", "w")) == NULL)
+    {
+        printf("文件不存在！\n");
+        return;
+    }
+    for (int j = 0; j < k; j++)
+    {
+        fprintf(p, "%d %s %lld %d 40\n", movies[j].id, &movies[j].name, movies[j].date, movies[j].price);
+
+    }
+    fclose(p);
+    char c[2];
+    printf("修改成功！\n");
+    printf("是否继续修改？（y/n)");
+    scanf("%s", c);
+    if (strcmp(c, "N") == 0 || strcmp(c, "n") == 0) {
+        return;
+    }
+    modify_movie();
 }
 
 void check_ticket() {
@@ -1196,6 +1226,123 @@ int print_movies()
         printf("%-7d %s %lld %d    剩余%d个\n", movies[i].id, movies[i].name, movies[i].date, movies[i].price, movies[i].remain_ticket);
     }
     return num_movies;
+}
+
+void refund_ticket(user_info user)
+{
+    FILE* order_info = fopen("order_info.txt", "r");
+    FILE* p;
+    int id = user.user_id;
+    int order_num = 0;
+    int found_num = 0;
+    if (order_info == NULL) {
+        printf("预定信息加载失败！请联系管理员。\n");
+        wait();
+        return;
+    }
+
+    while (fscanf(order_info, "%s %lld %d %d %d", orders[order_num].name, &orders[order_num].date, &orders[order_num].ordered_seat_x, &orders[order_num].ordered_seat_y, &orders[order_num].user_id) == 5)
+        order_num++;
+    fclose(order_info);
+    int k = order_num;
+    for (int m = 0; m < k; m++) {
+        for (int i = 0; i < order_num; i++) {
+            if (orders[i].user_id == id) {
+                found_num++;
+                printf("已找到%d用户的第%d条电影预定信息：\n电影名称：%s \n播放日期：%lld\n第%d排,第%d列", orders[i].user_id, found_num, &orders[i].name, orders[i].date, orders[i].ordered_seat_x, orders[i].ordered_seat_y);
+                char ch;
+                while ((ch = getchar()) != '\n');
+                printf("是否确认申请退款？（Y确认）：");
+                scanf("%c", &ch);
+                if (ch == 'y' || ch == 'Y')
+                {
+                    for (int j = i; j < k; j++)
+                    {
+                        movies[j] = movies[j + 1];//将后一个记录前移
+                    }
+                    k--;
+                    printf("\n电影申请退款成功！");
+                }
+                else
+                {
+                    printf("\n电影退款申请已取消！");
+                    continue;
+                }
+            }
+            if ((p = fopen("order_info.txt", "w")) == NULL)
+            {
+                printf("文件不存在！\n");
+                return;
+            }
+            for (int j = 0; j < k; j++)
+            {
+                fprintf(p, "% s % lld % d % d % d\n", &orders[j].name, orders[j].date, orders[j].ordered_seat_x, orders[j].ordered_seat_y, orders[j].user_id);
+
+            }
+            fclose(p);
+        }
+
+
+    }
+    if (!found_num)printf("未找到用户%d相关的订票信息！", id);
+    char ch;
+    printf("是否继续申请电影票退款？（输入Y继续）：");
+    while ((ch = getchar()) != '\n');
+    scanf("%c", &ch);
+    if (ch == 'y' || ch == 'Y')refund_ticket(user);
+}
+
+void search_movie()
+{
+    system("cls");
+    char movie_name[20];
+    FILE* fp = fopen("movie_info.txt", "r");
+    if (fp == NULL) {
+        printf("电影信息加载失败！\n");
+        wait();
+        return;
+    }
+    int num_movies = 0;
+    int found_movies = 0;
+    while ((fscanf(fp, "%d %s %lld %d %d", &movies[num_movies].id, &movies[num_movies].name, &movies[num_movies].date, &movies[num_movies].price, &movies[num_movies].remain_ticket)) == 5) {
+        num_movies++;
+    }
+    fclose(fp);
+    FILE* order_info = fopen("order_info.txt", "r");
+    if (order_info == NULL) {
+        printf("预定信息加载失败！请联系管理员。\n");
+        wait();
+        return;
+    }
+    int order_num = 0;
+    while (fscanf(order_info, "%s %lld %d %d %d", orders[order_num].name, &orders[order_num].date, &orders[order_num].ordered_seat_x, &orders[order_num].ordered_seat_y, &orders[order_num].user_id) == 5)
+        order_num++;
+    fclose(order_info);
+    printf("请输入要查询的电影名称：");
+    scanf("%s", movie_name);
+    printf("已找到相关电影信息！\n");
+    printf("ID\t片名\t时间\t票价\t剩余座位\n");
+    for (int i = 0; i < num_movies; i++)
+    {
+        if (strcmp(movie_name, movies[i].name) == 0)
+        {
+            printf("%-7d %s %lld %d    剩余%d个\n", movies[i].id, movies[i].name, movies[i].date, movies[i].price, movies[i].remain_ticket);
+            found_movies++;
+        }
+            
+    }
+    printf("%d", found_movies);
+    if (found_movies==0)
+    {
+        system("cls");
+        printf("未找到相关电影信息，请检查后重试！");
+    }
+    wait();
+    char ch;
+    while ((ch = getchar()) != '\n');
+    printf("是否继续查询电影信息？（输入Y继续）：");
+    scanf("%c", &ch);
+    if (ch == 'y' || ch == 'Y')search_movie();
 }
 
 int main()
